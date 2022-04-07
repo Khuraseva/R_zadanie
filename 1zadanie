@@ -1,0 +1,74 @@
+#Хурасева #ДА130
+#Для региона 72 рассчитайте урожайность 
+#пшеницы в период с 2004 по 2014 год взяв 
+#для рассчета средние суммы активных температур 
+#за эти годы, с 20 ближайших метеостанций.
+
+
+rm(list=ls())
+library(rnoaa)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+
+setwd("C:/R2")
+#station_data = ghcnd_stations()
+station_data = read.csv("station_data.csv")
+#После получения списка всех станций, получите список станций ближайших к столице 
+#вашего региона,создав таблицу с именем региона и координатами его столицы
+Tiumen = data.frame(id = "TIUMEN", latitude = 57.09,longitude = 65.32)
+t_around = meteo_nearby_stations(lat_lon_df = Tiumen, station_data = station_data,
+                                    limit = 20, var = c("PRCP", "TAVG"),
+                                    year_min = 2004, year_max = 2014)
+T_id = t_around[["TIUMEN"]][["id"]][1]
+str(t_around)
+all_t_data = meteo_tidy_ghcnd(stationid = T_id)
+#Чтобы получить таблицу всех метеостанций вокруг Тюмени нужно выбрать целиком 
+#первый объект из списка
+t_table = t_around[[1]]
+summary(t_table)
+#Нужно создать цикл, в котором бы скачивались  нужные данные для всех 
+#метеостанций из созданного списка
+#Создадим промежуточный объект, куда будем скачивать данные
+#с конкретной метеостанции
+all_i = data.frame()
+#Создадим объект, куда скачаем все данные всех метеостанций
+all_t = data.frame()
+#Цикл для всех метеостанций
+for(i in 1:20) 
+{all_i  = meteo_tidy_ghcnd(stationid =   t_around[["TIUMEN"]][["id"]][i])
+all_i = all_i[ ,c("id","date","tavg")] 
+print(all_i)
+all_t=rbind(all_t, all_i)}
+
+#Рассчитаем среднюю сумму активных температур для двух метеостанций, 
+#для Тюменьской области
+data_t = all_t %>% 
+  mutate(date=ymd(date),
+         year=year(date),
+         month=month(date)) %>%
+  mutate(tavg=case_when( tavg<50 ~ 0, TRUE ~ tavg)/10) %>% 
+  filter (year>2003 & year < 2015) %>% 
+  group_by(id,year,month) %>% 
+  summarize(tsum = sum(tavg,na.rm=TRUE)) %>% 
+  mutate(tsum=case_when(tsum==NA~0, TRUE ~ tsum)) %>% ungroup() %>% 
+  group_by(month) %>% summarize(St = mean(tsum))
+
+afi=c(0.00,0.00,0.00,32.11,26.31,25.64,32.20,18.73,
+     16.30,13.83,0.00,0.00)
+bfi=c(0.00,0.00,0.00,11.30,9.26,9.03,8.16,6.59,5.73,
+      4.87,0.00,0.00)
+di=c(0.00,0.00,0.00,0.33,1.00,1.00,1.00,0.32,0.00,
+     0.00,0.00,0.00) 
+y=1.0
+Kf=300
+Qj=1600
+Lj=2.2
+Ej=25
+#Рассчитаем урожайность по месяцам
+data_t= data_t %>% 
+  mutate(Fi=afi+(bfi*y*(data_t$St)))
+data_t= data_t %>% mutate(Yj=((data_t$Fi)*di*Kf)/(Qj*Lj*(100-Ej)))
+#Расчитываем суммарную урожайность как сумму по месяцам
+YIELD=sum(data_t$Yj);YIELD
