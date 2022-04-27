@@ -4,8 +4,6 @@
 #по данным измерений методом турбулентной пульсации.
 
 
-setwd("C:/R2")
-
 rm(list=ls())
 library("tidyverse") 
 library("readr")     
@@ -39,7 +37,7 @@ names(tbl) = names(tbl) %>%
   str_replace_all("[%]","_perc_") %>%
   str_replace_all("[&]","_amp_") %>%
   str_replace_all("[\\^]","_power_") %>%
-  str_replace_all("[()]","_") 
+  str_replace_all("[()]","emph") 
 glimpse(tbl)
 #Отфильтруем данные для своего варианта
 tbl = filter(tbl,DOY >= 1 & DOY <= 365)
@@ -59,16 +57,45 @@ test = row_numbers[-teach]
 teaching_tbl = tbl_numeric[teach,]
 testing_tbl = tbl_numeric[test,]
 
-model1=lm(h2o_flux~Tau+rand_err_Tau+
-            H+rand_err_H+LE+qc_LE+rand_err_LE+
-            co2_flux+rand_err_co2_flux+
-            qc_h2o_flux+rand_err_h2o_flux+h2o_time_lag+
-            sonic_temperature+air_temperature+
-            air_density+air_molar_volume+es+RH+VPD+u_star_+TKE+
-            _z_minus_d_div_L+T_star_+un_Tau+un_H+
-            un_LE+un_co2_flux+un_h2o_flux+u_var+
-            v_var+w_var+ts_var+h2o_var+w_div_ts_cov+
-            w_div_co2_cov+w_div_h2o_cov+
-            flowrate, data = teaching_tbl)
+model0=lm(h2o_flux ~Tau + rand_err_Tau + H + rand_err_H + LE + qc_LE + 
+            rand_err_LE + co2_flux + rand_err_co2_flux + qc_h2o_flux + 
+            rand_err_h2o_flux + h2o_time_lag + sonic_temperature + air_temperature + 
+            air_density + air_molar_volume + es + RH + VPD + u_star_ + 
+            TKE + emphz_minus_demph_div_L + T_star_ + un_Tau + un_H + 
+            un_LE + un_co2_flux + un_h2o_flux + u_var + v_var + w_var + 
+            ts_var + h2o_var + w_div_ts_cov + w_div_co2_cov + w_div_h2o_cov + 
+            flowrate,
+          data = teaching_tbl)
+coef(model0)
+resid(model0)
+confint(model0)
+summary(model0)
+anova(model0)
+
+model1=lm(h2o_flux ~Tau + rand_err_Tau + H + rand_err_H + LE + qc_LE + 
+            rand_err_LE + co2_flux + rand_err_co2_flux + 
+            rand_err_h2o_flux + h2o_time_lag + sonic_temperature + air_temperature + 
+            air_density + air_molar_volume + es + RH + u_star_ + 
+            TKE + emphz_minus_demph_div_L + T_star_ + un_Tau + un_H + 
+            un_LE + un_co2_flux + un_h2o_flux +  flowrate,
+          data = teaching_tbl)
+coef(model1)
+resid(model1)
+confint(model1)
 summary(model1)
 anova(model1)
+anova(model0, model1)
+
+model2=lm(h2o_flux ~ (Tau + rand_err_Tau + H + rand_err_H + LE + qc_LE + 
+            rand_err_LE + co2_flux + rand_err_co2_flux + 
+            rand_err_h2o_flux + h2o_time_lag + sonic_temperature + air_temperature + 
+            air_density + air_molar_volume + es + RH + u_star_ + 
+            TKE + emphz_minus_demph_div_L + T_star_ + un_Tau + un_H + 
+            un_LE + un_co2_flux + un_h2o_flux +  flowrate)^2,
+          data = teaching_tbl)
+coef(model2)
+resid(model2)
+confint(model2)
+summary(model2)
+anova(model2)
+anova(model1, model2)
